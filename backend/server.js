@@ -157,35 +157,52 @@ app.post('/me/accounts', async (req, res) => {
 })
 
 // Sätt in pengar
-app.post('/me/accounts/transactions', (req, res) => {
-  console.log(`users: ${JSON.stringify(users)}`)
-  console.log(`accounts: ${JSON.stringify(accounts)}`)
-  console.log(`sessions: ${JSON.stringify(sessions)}`)
+app.post('/me/accounts/transactions', async (req, res) => {
+  // console.log(`users: ${JSON.stringify(users)}`)
+  // console.log(`accounts: ${JSON.stringify(accounts)}`)
+  // console.log(`sessions: ${JSON.stringify(sessions)}`)
   const { otp, amount } = req.body
-  console.log(req.body)
-  console.log('in transaction otp=', otp)
-  console.log(JSON.stringify(sessions[0]))
+  // console.log(req.body)
+  // console.log('in transaction otp=', otp)
+  // console.log(JSON.stringify(sessions[0]))
   //const session = sessions.find((s) => s.username === username && s.otp === otp)
-  const session = sessions.find((s) => s.token === otp)
-  if (!session) {
-    console.log('err no session in transaction')
-    return res.status(401).send('Ogiltig session')
-  }
-  console.log(JSON.stringify(sessions))
+  try {
+    const [session] = await query(
+      'SELECT userId FROM sessions WHERE token = ?',
+      [otp]
+    )
+    if (!session) {
+      console.log('err no session in transaction')
+      return res.status(401).send('Ogiltig session')
+    }
+    console.log(JSON.stringify(sessions))
 
-  const account = accounts.find((s) => s.userId === session.userId)
-  if (!account) {
-    console.log('err no account in transaction')
-    return res.status(401).send('Ogiltig session')
-  }
-  // Din kod för att hantera transaktioner här
-  account.balance += amount
+    const [account] = await query('SELECT * FROM accounts WHERE userId = ?', [
+      session.userId,
+    ])
+    if (!account) {
+      console.log('err no account in transaction')
+      return res.status(401).send('Ogiltig session')
+    }
+    // Din kod för att hantera transaktioner här
+    // account.balance += amount
 
-  console.log(`account: ${account}`)
-  // Send the updated balance back to the client
-  const newBalance = account.balance
-  console.log(`newBalance ${newBalance}`)
-  res.status(200).json({ balance: newBalance })
+    // console.log(`account: ${account}`)
+    // // Send the updated balance back to the client
+    // const newBalance = account.balance
+
+    const newBalance = account.balance + amount
+    await query('UPDATE accounts SET balance = ? WHERE userId = ?', [
+      newBalance,
+      session.userId,
+    ])
+
+    console.log(`newBalance ${newBalance}`)
+    res.status(200).json({ balance: newBalance })
+  } catch (error) {
+    console.error('Error processing transaction:', error)
+    res.status(500).send('Ett fel uppstod vid transaktionshantering')
+  }
 })
 
 // Starta servern

@@ -111,7 +111,6 @@ app.post('/sessions', async (req, res) => {
   console.log(accountInsertResult)
 })
 ```
-<<<<<<< HEAD
 
 #### where is otp :> in account
 
@@ -138,5 +137,47 @@ app.post('/sessions', async (req, res) => {
   }
 })
 ```
-=======
->>>>>>> eab0457f310f5c72edf90a3a7263b876c12b1464
+
+####
+
+```js
+app.post('/me/accounts/transactions', async (req, res) => {
+  try {
+    const [session] = await query(
+      'SELECT userId FROM sessions WHERE token = ?',
+      [otp]
+    )
+    if (!session) {
+      console.log('err no session in transaction')
+      return res.status(401).send('Ogiltig session')
+    }
+    console.log(JSON.stringify(sessions))
+
+    const [account] = await query('SELECT * FROM accounts WHERE userId = ?', [
+      session.userId,
+    ])
+    if (!account) {
+      console.log('err no account in transaction')
+      return res.status(401).send('Ogiltig session')
+    }
+    // Din kod för att hantera transaktioner här
+    // account.balance += amount
+
+    // console.log(`account: ${account}`)
+    // // Send the updated balance back to the client
+    // const newBalance = account.balance
+
+    const newBalance = account.balance + amount
+    await query('UPDATE accounts SET balance = ? WHERE userId = ?', [
+      newBalance,
+      session.userId,
+    ])
+
+    console.log(`newBalance ${newBalance}`)
+    res.status(200).json({ balance: newBalance })
+  } catch (error) {
+    console.error('Error processing transaction:', error)
+    res.status(500).send('Ett fel uppstod vid transaktionshantering')
+  }
+})
+```
