@@ -9,6 +9,22 @@ const port = 3001
 app.use(cors())
 app.use(bodyParser.json())
 
+import mysql from 'mysql2/promise'
+
+const pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'bank',
+  port: 8889,
+})
+
+// help function to make code look nicer
+async function query(sql, params) {
+  const [results] = await pool.execute(sql, params)
+  return results
+}
+
 // Tomma arrayer för användare, konton och sessioner
 let userIds = 1
 let users = []
@@ -34,15 +50,28 @@ function generateOTP() {
 }
 
 // Skapa användare
-app.post('/users', (req, res) => {
+app.post('/users', async (req, res) => {
   const { username, password } = req.body
   const user = { id: userIds++, username, password }
   users.push(user)
-  console.log(users)
-  const account = { id: accounts.length + 1, userId: user.id, balance: 0 }
-  accounts.push(account)
-  console.log(account)
-  res.status(201).send('Användare skapad')
+  //
+  try {
+    const result = await query(
+      'INSERT INTO users (username, password) VALUES (?, ?)',
+      [username, password]
+    )
+
+    //
+    console.log(users)
+    const account = { id: accounts.length + 1, userId: user.id, balance: 0 }
+    accounts.push(account)
+    console.log(account)
+
+    res.status(201).send('User created')
+  } catch (error) {
+    console.error('Error creating user', error)
+    res.status(500).send('Error creating user')
+  }
 })
 
 // Logga in och skicka engångslösenord
