@@ -87,57 +87,73 @@ app.post('/sessions', async (req, res) => {
   // const user = users.find(
   //   (u) => u.username === username && u.password === password
   // )
-  const [user] = await query(
-    'SELECT id FROM users WHERE username = ? AND password = ?',
-    [username, password]
-  )
+  try {
+    const [user] = await query(
+      'SELECT id FROM users WHERE username = ? AND password = ?',
+      [username, password]
+    )
 
-  if (!user) {
-    console.log('error')
-    return res.status(401).send('Fel användarnamn eller lösenord')
+    if (!user) {
+      console.log('error')
+      return res.status(401).send('Fel användarnamn eller lösenord')
+    }
+    console.log(user)
+    const otp = generateOTP()
+
+    const accountInsertResult = await query(
+      'INSERT INTO sessions (userId, token) VALUES (?, ?)',
+      [user.id, otp]
+    )
+    console.log(accountInsertResult)
+    // const session = { userId: user.id, token: otp }
+    // sessions.push(session)
+    // console.log(`sessions ${session}`)
+    // console.log(`otp ${otp}`)
+    res.status(200).json({ accountInsertResult })
+  } catch (error) {
+    console.error('Error fetching account:', error)
+    res.status(500).send('Ett fel uppstod vid hämtning av kontot')
   }
-  console.log(user)
-  const otp = generateOTP()
-
-  const accountInsertResult = await query(
-    'INSERT INTO sessions (userId, token) VALUES (?, ?)',
-    [user.id, otp]
-  )
-  console.log(accountInsertResult)
-  // const session = { userId: user.id, token: otp }
-  // sessions.push(session)
-  // console.log(`sessions ${session}`)
-  // console.log(`otp ${otp}`)
-  res.status(200).json({ accountInsertResult })
 })
 
 // Visa saldo
-app.post('/me/accounts', (req, res) => {
-  console.log(`users: ${JSON.stringify(users)}`)
-  console.log(`accounts: ${JSON.stringify(accounts)}`)
-  console.log(`sessions: ${JSON.stringify(sessions)}`)
+app.post('/me/accounts', async (req, res) => {
+  // console.log(`users: ${JSON.stringify(users)}`)
+  // console.log(`accounts: ${JSON.stringify(accounts)}`)
+  // console.log(`sessions: ${JSON.stringify(sessions)}`)
   const { otp } = req.body
-  console.log(otp)
-  console.log('otp:', otp)
-  console.log(`sessions: ${sessions} x $`)
-  const session = sessions.find((s) => s.token === otp)
-  if (!session) {
-    console.log('err session in accounts')
-    return res.status(401).send('Ogiltig session')
+  // console.log(otp)
+  // console.log('otp:', otp)
+  // console.log(`sessions: ${sessions} x $`)
+  try {
+    // Find the session associated with the provided OTP
+    const [session] = await query(
+      'SELECT userId FROM sessions WHERE token = ?',
+      [otp]
+    )
+    if (!session) {
+      console.log('err session in accounts')
+      return res.status(401).send('Ogiltig session')
+    }
+    console.log(session)
+    const [account] = await query('SELECT * FROM accounts WHERE userId = ?', [
+      session.userId,
+    ])
+    if (!account) {
+      console.log('err account in accounts')
+      return res.status(401).send('Ogiltig session')
+    }
+    // Din kod för att visa saldo här
+    let saldo = 0
+    if (account.balance) {
+      saldo = account.balance
+    }
+    console.log(saldo)
+    res.status(200).json({ saldo: saldo })
+  } catch (error) {
+    console.error('Error fetching account:', error)
+    res.status(500).send('Ett fel uppstod vid hämtning av kontot')
   }
-  console.log(session)
-  const account = accounts.find((s) => s.userId === session.userId)
-  if (!account) {
-    console.log('err account in accounts')
-    return res.status(401).send('Ogiltig session')
-  }
-  // Din kod för att visa saldo här
-  let saldo = 0
-  if (account.balance) {
-    saldo = account.balance
-  }
-  console.log(saldo)
-  res.status(200).json({ saldo: saldo })
 })
 
 // Sätt in pengar

@@ -111,3 +111,29 @@ app.post('/sessions', async (req, res) => {
   console.log(accountInsertResult)
 })
 ```
+
+#### where is otp :> in account
+
+```js
+app.post('/sessions', async (req, res) => {
+// console.log(otp)
+  // console.log('otp:', otp)
+  // console.log(`sessions: ${sessions} x $`)
+  try {
+    // Find the session associated with the provided OTP
+    const [session] = await query(
+      'SELECT userId FROM sessions WHERE token = ?',
+      [otp]
+    )
+   ...
+    console.log(session)
+    const [account] = await query('SELECT * FROM accounts WHERE userId = ?', [
+      session.userId,
+    ])
+   ....
+  } catch (error) {
+    console.error('Error fetching account:', error)
+    res.status(500).send('Ett fel uppstod vid hämtning av kontot')
+  }
+})
+```
