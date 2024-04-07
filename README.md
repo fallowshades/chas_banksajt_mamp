@@ -78,3 +78,36 @@ app.post('/users', async (req, res) => {
   console.log(accountInsertResult)
 })
 ```
+
+#### login search by filter and find id
+
+new query body in thunderclinet test tool
+
+```json
+{
+  "username": "master",
+  "password": "slave"
+}
+```
+
+server.js
+
+- search by filter also create the final table
+
+```js
+app.post('/sessions', async (req, res) => {
+
+    const [user] = await query(
+    'SELECT id FROM users WHERE username = ? AND password = ?',
+    [username, password]
+  )
+
+  ...
+
+   const accountInsertResult = await query(
+    'INSERT INTO sessions (userId, token) VALUES (?, ?)',
+    [user.id, otp]
+  )
+  console.log(accountInsertResult)
+})
+```

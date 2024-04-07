@@ -82,17 +82,28 @@ app.post('/users', async (req, res) => {
 })
 
 // Logga in och skicka engångslösenord
-app.post('/sessions', (req, res) => {
+app.post('/sessions', async (req, res) => {
   const { username, password } = req.body
-  const user = users.find(
-    (u) => u.username === username && u.password === password
+  // const user = users.find(
+  //   (u) => u.username === username && u.password === password
+  // )
+  const [user] = await query(
+    'SELECT id FROM users WHERE username = ? AND password = ?',
+    [username, password]
   )
+
   if (!user) {
     console.log('error')
     return res.status(401).send('Fel användarnamn eller lösenord')
   }
-
+  console.log(user)
   const otp = generateOTP()
+
+  const accountInsertResult = await query(
+    'INSERT INTO sessions (userId, token) VALUES (?, ?)',
+    [user.id, otp]
+  )
+  console.log(accountInsertResult)
   const session = { userId: user.id, token: otp }
   sessions.push(session)
   console.log(`sessions ${session}`)
