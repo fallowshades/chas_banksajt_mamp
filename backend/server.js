@@ -60,12 +60,19 @@ app.post('/users', async (req, res) => {
       'INSERT INTO users (username, password) VALUES (?, ?)',
       [username, password]
     )
-
+    console.log(result.insertId)
+    const userId = result.insertId
     //
-    console.log(users)
-    const account = { id: accounts.length + 1, userId: user.id, balance: 0 }
-    accounts.push(account)
-    console.log(account)
+    const balance = 0
+    // console.log(users)
+    const accountInsertResult = await query(
+      'INSERT INTO accounts (userId, balance) VALUES (?, ?)',
+      [userId, balance]
+    )
+    console.log(accountInsertResult)
+    // const account = { id: accounts.length + 1, userId: userId, balance: 0 }
+    // accounts.push(account)
+    //console.log(account)
 
     res.status(201).send('User created')
   } catch (error) {

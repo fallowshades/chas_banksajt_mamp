@@ -4,7 +4,7 @@
 
 ### managment of objeccts in the array
 
-#### the user object
+#### the user object in create user
 
 ```sh
 npm mysql
@@ -51,11 +51,30 @@ app.post('/users', async (req, res) => {
 }
 ```
 
-thunderhelmet
+thunderclient
 
 ```json
 {
   "username": "abc",
   "password": "abc"
 }
+```
+
+#### another table with a constrain defined in relation view
+
+server.js
+
+```js
+app.post('/users', async (req, res) => {
+  console.log(result.insertId)
+  const userId = result.insertId
+
+  const balance = 0
+  // console.log(users)
+  const accountInsertResult = await query(
+    'INSERT INTO accounts (userId, balance) VALUES (?, ?)',
+    [userId, balance]
+  )
+  console.log(accountInsertResult)
+})
 ```
